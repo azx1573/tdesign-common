@@ -18,6 +18,7 @@ export function parseToDayjs(
   format: string,
   timeOfDay?: string,
   dayjsLocale?: string,
+  firstDayOfWeek?: number = 7,
 ) {
   if (value === '' || value === null) return dayjs();
 
@@ -33,11 +34,20 @@ export function parseToDayjs(
     const weekFormatStr = format.split(/[-/.\s]/)[1];
 
     let firstWeek = dayjs(yearStr, 'YYYY').locale(dayjsLocale || 'zh-cn').startOf('year');
+    console.log('firstWeek', firstWeek.day());
     // 第一周ISO定义: 本年度第一个星期四所在的星期
     // 如果第一年第一天在星期四后, 直接跳到下一周, 下一周必定是第一周
     // 否则本周即为第一周
     if (firstWeek.day() > 4 || firstWeek.day() === 0) firstWeek = firstWeek.add(1, 'week');
 
+    if (firstDayOfWeek !== 1) {
+      let offset = firstDayOfWeek - firstWeek.day();
+      if (offset > 0) {
+        offset -= 7; // 如果offset为正数，则需要向前推到上一周
+      }
+      firstWeek = firstWeek.add(offset, 'day');
+    }
+    console.log('firstWeek_after_update', firstWeek);
     // 一年有52或者53周, 引入IsoWeeksInYear辅助查询
     const weekCounts = dayjs(yearStr, 'YYYY').locale(dayjsLocale || 'zh-cn').isoWeeksInYear();
     for (let i = 0; i <= weekCounts; i += 1) {
@@ -78,6 +88,7 @@ export function parseToDayjs(
     log.error('DatePicker', `Check whether the format、value format is valid.\n value: '${value}', format: '${format}'`);
     return dayjs();
   }
+  console.log('parseToDayjs最终输出数据', result);
 
   return result;
 }
@@ -157,6 +168,8 @@ function formatSingle({
   if (targetFormat === 'time-stamp') return dayJsDate.toDate().getTime();
   // valueType = 'Date' 返回时间对象
   if (targetFormat === 'Date') return dayJsDate.toDate();
+  console.log(888, format, targetFormat);
+  console.log(9999, dayJsDate.format(targetFormat || format), targetFormat);
 
   return dayJsDate.format(targetFormat || format);
 }
@@ -187,8 +200,10 @@ export function formatDate(
   let result;
 
   if (Array.isArray(newDate)) {
+    console.log('array');
     result = formatRange({ newDate, format, dayjsLocale, targetFormat, autoSwap });
   } else {
+    console.log('else');
     result = formatSingle({ newDate, format, dayjsLocale, targetFormat });
   }
 
